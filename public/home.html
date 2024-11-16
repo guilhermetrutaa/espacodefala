@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espaço de Voz</title>
+    <link rel="stylesheet" href="css/style-home.css">
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Logo -->
+    <img src="imagens/logo-home.png" class="logo" alt="Logo do Espaço de Voz">
+
+    <!-- Tema Atual -->
+    <div class="divv-tema">
+        <p class="p-text">Pergunta de Hoje:</p>
+        <p id="tema">Carregando tema...</p>
+    </div>
+
+    <!-- Área de escrita -->
+    <div class="escrever">
+        <h2 class="escreva-p">Escreva sua carta anônima</h2>
+        <textarea placeholder="Escreva sua carta aqui..." id="resposta"></textarea><br>
+        <button id="enviar">Enviar <img src="icons/icon-enviar.png" alt=""></button>
+    </div>
+
+    <!-- Respostas -->
+    <h2 class="h2-resposta">Respostas</h2>
+    <div id="respostas"></div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <script>
+        // Conectar ao backend hospedado na Render
+        const socket = io();
+
+        // Atualizar o tema
+        socket.on('tema_atual', (tema) => {
+            document.getElementById('tema').innerText = tema || 'Tema indisponível no momento.';
+        });
+
+        // Atualizar respostas
+        socket.on('respostas', (respostas) => {
+            const respostasDiv = document.getElementById('respostas');
+            respostasDiv.innerHTML = ''; // Limpa antes de adicionar
+            respostas.forEach((resposta, index) => {
+                const respostaDiv = document.createElement('div');
+                respostaDiv.classList.add('resposta');
+                respostaDiv.id = `resposta-${index}`;
+                respostaDiv.innerHTML = `
+                    <div class="div-respostaa">
+                        <p>${resposta.texto}</p>
+                        <button class="button-like" onclick="curtir(${index})">Curtir (${resposta.likes})</button>
+                        <button class="button-estrela" onclick="estrelar(${index})">Estrela (${resposta.estrelas})</button>
+                    </div>
+                `;
+                respostasDiv.appendChild(respostaDiv);
+            });
+        });
+
+        // Enviar nova resposta
+        document.getElementById('enviar').addEventListener('click', () => {
+            const resposta = document.getElementById('resposta').value.trim();
+            if (resposta) {
+                socket.emit('nova_resposta', resposta);
+                document.getElementById('resposta').value = ''; // Limpa a área de texto
+            } else {
+                alert('Por favor, escreva algo antes de enviar!');
+            }
+        });
+
+        // Curtir resposta
+        function curtir(index) {
+            socket.emit('interagir_resposta', { index, tipo: 'like' });
+        }
+
+        // Estrelar resposta
+        function estrelar(index) {
+            socket.emit('interagir_resposta', { index, tipo: 'estrela' });
+        }
+    </script>
+</body>
+</html>
